@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <id>wot.telegram.notifier</id>
+  <name>WoT Telegram Notifier</name>
+  <description>Telegram notifications for login/logout/battle start/battle end.</description>
+  <version>1.0.3</version>
+</root>

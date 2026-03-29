@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+*.wotmod
+
+# Python cache
+*.pyc
+*.pyo
+__pycache__/
+
+# Local IDE/temp
+.vs/
+$tmp/
+_inspect_wotmod/
+
+# Local logs/notes
+zjmodsloader_decompiled.txt
+zjmodsloader_decompile_err.txt
