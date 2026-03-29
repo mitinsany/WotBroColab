@@ -18,7 +18,7 @@
 ## Требования среды
 - Клиент WoT (runtime Python 2)
 - PowerShell 5+
-- Рабочий `.env` в `D:\GAMES\World_of_Tanks_EU\mods\<version>\.env`
+- Рабочий `.env` в `D:\GAMES\World_of_Tanks_EU\mods\.env`
 
 Обязательные переменные:
 - `WOT_TG_BOT_TOKEN`

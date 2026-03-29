@@ -12,7 +12,7 @@ World of Tanks mod: Telegram notifier for game events (login/logout/battle start
 - Mod entrypoint:
   - `D:\GAMES\World_of_Tanks_EU\res_mods\2.2.0.2\scripts\client\gui\mods\mod_wot_telegram_notifier.py`
 - Env file:
-  - `D:\GAMES\World_of_Tanks_EU\mods\2.2.0.2\.env`
+  - `D:\GAMES\World_of_Tanks_EU\mods\.env`
 
 ## Runtime constraints
 - Client runtime is Python 2 (see `python.log` markers like `Python2`).
