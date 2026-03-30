@@ -1,6 +1,6 @@
 ﻿# WoT Telegram Notifier (mod branch)
 
-Эта ветка для конечного пользователя: здесь только готовый мод и утилиты обновления.
+Эта ветка для конечного пользователя: здесь только готовый мод и утилиты установки.
 
 ## Быстрый старт (2 команды)
 ```powershell
@@ -17,13 +17,11 @@ powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest https://raw.githu
 git pull
 ```
 
-## Проверка доступности новой версии
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\check_update.ps1
-```
+## Проверка обновления
+- Мод сам проверяет новую версию по `gh-pages`.
+- Если обновление доступно, уведомление появится в игре после логина.
 
 ## Где лежит мод
 - `mods/2.2.0.2/wot_telegram_notifier_current.wotmod`
-- `mods/2.2.0.2/wot_telegram_notifier_current.manifest.json`
 
 Подробности по ошибкам: `docs/TROUBLESHOOTING.md`.

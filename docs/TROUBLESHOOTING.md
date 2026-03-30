@@ -4,9 +4,13 @@
 - Проверьте `python.log` по строкам `wot_telegram_notifier_current.wotmod`.
 - Если есть `load error`, выполните `git pull` и запустите игру снова.
 
-## Нет сообщений в Telegram
-- Проверьте `mods/.env` и наличие `WOT_TG_BOT_TOKEN`, `WOT_TG_CHAT_ID`.
+## Нет Telegram-сообщений по событиям
+- Проверьте `mods/.env` и значения `WOT_TG_BOT_TOKEN`, `WOT_TG_CHAT_ID`.
 - Проверьте `logs/wot_tg_mod.log` по строкам `[WoT TG]`.
+
+## Нет уведомления об обновлении
+- Уведомление о новой версии показывается в игре после логина.
+- Если нужно проверить вручную, обновите ветку командой `git pull`.
 
 ## Не найден .env
 - Запустите: `powershell -ExecutionPolicy Bypass -File .\tools\bootstrap_mod.ps1`.
