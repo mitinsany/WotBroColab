@@ -80,6 +80,14 @@ $files += [PSCustomObject]@{
     Data = $patchedSourceBytes
 }
 $files += [PSCustomObject]@{
+    Name = "res/scripts/client/gui/mods/mod_wot_telegram_notifier.py"
+    Data = $patchedSourceBytes
+}
+$files += [PSCustomObject]@{
+    Name = "res/scripts/client/mods/mod_wot_telegram_notifier.py"
+    Data = $patchedSourceBytes
+}
+$files += [PSCustomObject]@{
     Name = "meta.xml"
     Data = [System.IO.File]::ReadAllBytes($metaPath)
 }

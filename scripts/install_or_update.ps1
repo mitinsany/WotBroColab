@@ -51,16 +51,23 @@ if (-not $metaVersion) {
     throw "Could not read <version> from $metaPath"
 }
 
-$gameModsDir = Join-Path $GameRoot ("res_mods\{0}\scripts\client\gui\mods" -f $activeVersion)
-if (-not (Test-Path $gameModsDir)) {
-    New-Item -ItemType Directory -Path $gameModsDir -Force | Out-Null
+$gameModsDirGui = Join-Path $GameRoot ("res_mods\{0}\scripts\client\gui\mods" -f $activeVersion)
+if (-not (Test-Path $gameModsDirGui)) {
+    New-Item -ItemType Directory -Path $gameModsDirGui -Force | Out-Null
+}
+$gameModsDirClient = Join-Path $GameRoot ("res_mods\{0}\scripts\client\mods" -f $activeVersion)
+if (-not (Test-Path $gameModsDirClient)) {
+    New-Item -ItemType Directory -Path $gameModsDirClient -Force | Out-Null
 }
 
-$gameSourceTarget = Join-Path $gameModsDir "mod_wot_telegram_notifier.py"
+$gameSourceTargetGui = Join-Path $gameModsDirGui "mod_wot_telegram_notifier.py"
+$gameSourceTargetClient = Join-Path $gameModsDirClient "mod_wot_telegram_notifier.py"
 $sourceText = [System.IO.File]::ReadAllText($sourcePath)
 $patchedSourceText = $sourceText.Replace('__MOD_VERSION__', $metaVersion)
-[System.IO.File]::WriteAllText($gameSourceTarget, $patchedSourceText, [System.Text.Encoding]::UTF8)
-Write-Host "Updated source: $gameSourceTarget"
+[System.IO.File]::WriteAllText($gameSourceTargetGui, $patchedSourceText, [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($gameSourceTargetClient, $patchedSourceText, [System.Text.Encoding]::UTF8)
+Write-Host "Updated source: $gameSourceTargetGui"
+Write-Host "Updated source: $gameSourceTargetClient"
 
 $buildScript = Join-Path $ProjectRoot "scripts\build_wotmod.ps1"
 $outputRel = Join-Path "build" $OutputWotmodName
