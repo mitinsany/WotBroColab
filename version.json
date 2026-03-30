@@ -5,9 +5,9 @@
   "channel": "stable",
   "wot_version": "2.2.0.2",
   "mod_branch": "mod",
-  "mod_commit": "eef63ba",
-  "mod_commit_url": "https://github.com/mitinsany/WotBroColab/commit/eef63ba",
+  "mod_commit": "71e537e",
+  "mod_commit_url": "https://github.com/mitinsany/WotBroColab/commit/71e537e",
   "artifact_path": "mods/2.2.0.2/wot_telegram_notifier_current.wotmod",
-  "changelog_short": "Compatibility packaging fix, stable env path, onboarding improvements.",
+  "changelog_short": "In-game update notice after login, external checker removed, manifest removed.",
   "update_command": "git pull"
 }
