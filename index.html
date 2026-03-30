@@ -1,0 +1,41 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WoT Telegram Notifier - Version</title>
+  <style>
+    :root { --bg:#f4f7fb; --card:#ffffff; --text:#1a2433; --muted:#5b6b81; --line:#d8e0ea; --accent:#1f6feb; }
+    body { margin:0; font-family: "Segoe UI", Tahoma, sans-serif; background:linear-gradient(140deg,#f4f7fb,#eaf0f7); color:var(--text); }
+    .wrap { max-width:760px; margin:48px auto; padding:0 16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 8px 30px rgba(17,37,64,.08); }
+    h1 { margin:0 0 14px; font-size:28px; }
+    .meta { color:var(--muted); margin-bottom:16px; }
+    code { background:#eef3fa; padding:2px 6px; border-radius:6px; }
+    ul { padding-left:18px; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>WoT Telegram Notifier</h1>
+      <div class="meta">Stable channel status page</div>
+      <p><strong>Current version:</strong> <code>1.0.3</code></p>
+      <p><strong>Release date:</strong> 2026-03-31</p>
+      <p><strong>WoT target version:</strong> 2.2.0.2</p>
+      <p><strong>Update command:</strong> <code>git pull</code></p>
+      <p><strong>Artifact path:</strong> <code>mods/2.2.0.2/wot_telegram_notifier_current.wotmod</code></p>
+      <p><strong>mod branch commit:</strong> <a href="https://github.com/mitinsany/WotBroColab/commit/eef63ba">eef63ba</a></p>
+      <h2>Changelog (short)</h2>
+      <ul>
+        <li>Fixed <code>.wotmod</code> packaging compatibility for WoT loader.</li>
+        <li>Standardized environment path to <code>mods/.env</code>.</li>
+        <li>Added end-user onboarding and update-check workflow.</li>
+      </ul>
+      <p>Machine-readable endpoint: <a href="./version.json">version.json</a></p>
+    </div>
+  </div>
+</body>
+</html>
