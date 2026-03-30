@@ -1,9 +1,11 @@
 ﻿# Troubleshooting
 
 ## Мод не загрузился
-- Проверьте `D:\GAMES\World_of_Tanks_EU\python.log` по строкам `wot_telegram_notifier_current.wotmod`.
-- Если есть `compression not supported`, пересоберите мод через `scripts/build_wotmod.ps1` и обновите артефакт в `mod`.
-- Убедитесь, что файл лежит в `mods/<active_version>/wot_telegram_notifier_current.wotmod`.
+- Проверьте `D:\GAMES\World_of_Tanks_EU\python.log` по строкам `[WoT TG]`.
+- Убедитесь, что существуют файлы:
+  - `res_mods/<active_version>/scripts/client/gui/mods/mod_wot_telegram_notifier.pyc`
+  - `res_mods/<active_version>/scripts/client/mods/mod_wot_telegram_notifier.pyc`
+- Перезапустите установку: `powershell -ExecutionPolicy Bypass -File .\scripts\install_or_update.ps1`.
 
 ## Нет сообщений в Telegram
 - Проверьте наличие `D:\GAMES\World_of_Tanks_EU\mods\.env`.

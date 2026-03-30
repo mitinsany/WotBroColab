@@ -1,11 +1,11 @@
 ﻿{
-  "mod_id": "wot.telegram.notifier",
-  "version": "1.0.3",
-  "release_date": "2026-03-31",
-  "channel": "stable",
-  "wot_version": "2.2.0.2",
-  "mod_branch": "mod",
-  "artifact_path": "mods/2.2.0.2/wot_telegram_notifier_current.wotmod",
-  "changelog_short": "Compatibility packaging fix, stable env path, onboarding improvements.",
-  "update_command": "git pull"
+    "mod_id":  "wot.telegram.notifier",
+    "version":  "1.0.3",
+    "release_date":  "2026-03-31",
+    "channel":  "stable",
+    "wot_version":  "2.2.0.2",
+    "mod_branch":  "mod",
+    "artifact_path":  "res_mods/2.2.0.2/scripts/client/gui/mods/mod_wot_telegram_notifier.pyc",
+    "changelog_short":  "Compatibility packaging fix, stable env path, onboarding improvements.",
+    "update_command":  "git pull"
 }
