@@ -32,6 +32,10 @@ except Exception:
     urllib = None
     urllib2 = None
 
+MOD_ID = 'wot.telegram.notifier'
+MOD_VERSION = '__MOD_VERSION__'
+VERSION_CHECK_URL = 'https://mitinsany.github.io/WotBroColab/version.json'
+
 PLAYER_LOGIN = 'PLAYER_LOGIN'
 PLAYER_LOGOUT = 'PLAYER_LOGOUT'
 BATTLE_START = 'BATTLE_START'
@@ -54,6 +58,10 @@ _WORKER = None
 _STOP_EVENT = threading.Event()
 _LOG_FILE = None
 _COMPUTER_NAME = 'UNKNOWN-PC'
+_UPDATE_INFO = None
+_UPDATE_NOTICE_SHOWN = False
+_PLAYER_LOGGED_IN = False
+_UPDATE_NOTICE_RETRY_SCHEDULED = False
 
 
 def _log(msg):
@@ -195,6 +203,122 @@ def _resolve_computer_name():
     return (os.environ.get('COMPUTERNAME') or 'UNKNOWN-PC').strip() or 'UNKNOWN-PC'
 
 
+def _to_int_list(version_text):
+    parts = []
+    for chunk in str(version_text or '').split('.'):
+        digits = ''.join([c for c in chunk if c.isdigit()])
+        if not digits:
+            parts.append(0)
+        else:
+            try:
+                parts.append(int(digits))
+            except Exception:
+                parts.append(0)
+    return parts
+
+
+def _is_remote_newer(local_version, remote_version):
+    left = _to_int_list(local_version)
+    right = _to_int_list(remote_version)
+    size = max(len(left), len(right))
+    while len(left) < size:
+        left.append(0)
+    while len(right) < size:
+        right.append(0)
+    return right > left
+
+
+def _fetch_remote_version():
+    if urllib2 is None:
+        return None
+    req = urllib2.Request(VERSION_CHECK_URL)
+    resp = urllib2.urlopen(req, timeout=TIMEOUT_SECONDS)
+    body = resp.read()
+    data = json.loads(body)
+    if isinstance(data, dict):
+        return str(data.get('version') or '').strip()
+    return None
+
+
+def _queue_update_check():
+    global _UPDATE_INFO
+    try:
+        remote_version = _fetch_remote_version()
+        if not remote_version:
+            _log('Update check: remote version is empty')
+            return
+        if _is_remote_newer(MOD_VERSION, remote_version):
+            _UPDATE_INFO = {
+                'local': MOD_VERSION,
+                'remote': remote_version,
+            }
+            _log('Update available: local=%s remote=%s' % (MOD_VERSION, remote_version))
+        else:
+            _log('Update check: up-to-date (local=%s remote=%s)' % (MOD_VERSION, remote_version))
+    except Exception as e:
+        _log('Update check failed: %s' % e)
+
+
+def _push_system_message(text):
+    try:
+        import gui.SystemMessages as SystemMessages
+        msg_type = getattr(SystemMessages.SM_TYPE, 'Information', None)
+        if msg_type is None:
+            msg_type = getattr(SystemMessages.SM_TYPE, 'Warning', None)
+        if msg_type is None:
+            SystemMessages.pushMessage(text)
+        else:
+            SystemMessages.pushMessage(text, msg_type)
+        return True
+    except Exception as e:
+        _log('Unable to show in-game message: %s' % e)
+        return False
+
+
+def _schedule_update_notice_retry():
+    global _UPDATE_NOTICE_RETRY_SCHEDULED
+    if _UPDATE_NOTICE_RETRY_SCHEDULED:
+        return
+    try:
+        import BigWorld
+        _UPDATE_NOTICE_RETRY_SCHEDULED = True
+
+        def _retry():
+            global _UPDATE_NOTICE_RETRY_SCHEDULED
+            _UPDATE_NOTICE_RETRY_SCHEDULED = False
+            _try_show_update_notice()
+
+        BigWorld.callback(5.0, _retry)
+    except Exception as e:
+        _log('Unable to schedule update notice retry: %s' % e)
+
+
+def _try_show_update_notice():
+    global _UPDATE_NOTICE_SHOWN
+    if _UPDATE_NOTICE_SHOWN:
+        return
+    if not _PLAYER_LOGGED_IN:
+        return
+    if not _UPDATE_INFO:
+        return
+    text = u'[WoT TG] Доступна новая версия мода: %s -> %s. Обновите мод командой git pull.' % (
+        _UPDATE_INFO.get('local'),
+        _UPDATE_INFO.get('remote'),
+    )
+    if _push_system_message(text):
+        _UPDATE_NOTICE_SHOWN = True
+        _log('In-game update notice shown')
+    else:
+        _schedule_update_notice_retry()
+
+
+def _on_player_login():
+    global _PLAYER_LOGGED_IN
+    _PLAYER_LOGGED_IN = True
+    _queue_event(PLAYER_LOGIN)
+    _try_show_update_notice()
+
+
 def _format_message(event_type, payload):
     label = EVENT_LABELS.get(event_type, event_type)
     player = payload.get('player') or 'unknown_player'
@@ -307,7 +431,7 @@ def _install_hooks():
         import Account
         account_cls = getattr(Account, 'Account', None)
         if account_cls is not None:
-            if _wrap_method(account_cls, '_doCmdLogin', lambda *_: _queue_event(PLAYER_LOGIN)):
+            if _wrap_method(account_cls, '_doCmdLogin', lambda *_: _on_player_login()):
                 installed += 1
             if _wrap_method(account_cls, 'onBecomeNonPlayer', lambda *_: _queue_event(PLAYER_LOGOUT)):
                 installed += 1
@@ -334,15 +458,14 @@ def init():
     _COMPUTER_NAME = _resolve_computer_name()
     _load_config()
     _log('Init started')
+    _queue_update_check()
     if not BOT_TOKEN or not CHAT_ID:
         _log('Config missing WOT_TG_BOT_TOKEN/WOT_TG_CHAT_ID; notifier disabled')
-        return
-    if urllib is None or urllib2 is None:
+    elif urllib is None or urllib2 is None:
         _log('urllib/urllib2 not available; notifier disabled')
-        return
-
-    _start_worker()
-    _queue_event(PLAYER_LOGIN, player_name='mod_init', meta={'stage': 'startup'})
+    else:
+        _start_worker()
+        _queue_event(PLAYER_LOGIN, player_name='mod_init', meta={'stage': 'startup'})
     _install_hooks()
     _log('Mod initialized')
 

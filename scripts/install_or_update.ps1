@@ -41,6 +41,15 @@ $sourcePath = Join-Path $ProjectRoot $SourcePy
 if (-not (Test-Path $sourcePath)) {
     throw "Source file not found: $sourcePath"
 }
+$metaPath = Join-Path $ProjectRoot "packaging\meta.xml"
+if (-not (Test-Path $metaPath)) {
+    throw "Meta file not found: $metaPath"
+}
+[xml]$metaXmlDoc = Get-Content -Raw -LiteralPath $metaPath
+$metaVersion = "$($metaXmlDoc.root.version)"
+if (-not $metaVersion) {
+    throw "Could not read <version> from $metaPath"
+}
 
 $gameModsDir = Join-Path $GameRoot ("res_mods\{0}\scripts\client\gui\mods" -f $activeVersion)
 if (-not (Test-Path $gameModsDir)) {
@@ -48,7 +57,9 @@ if (-not (Test-Path $gameModsDir)) {
 }
 
 $gameSourceTarget = Join-Path $gameModsDir "mod_wot_telegram_notifier.py"
-Copy-Item -LiteralPath $sourcePath -Destination $gameSourceTarget -Force
+$sourceText = [System.IO.File]::ReadAllText($sourcePath)
+$patchedSourceText = $sourceText.Replace('__MOD_VERSION__', $metaVersion)
+[System.IO.File]::WriteAllText($gameSourceTarget, $patchedSourceText, [System.Text.Encoding]::UTF8)
 Write-Host "Updated source: $gameSourceTarget"
 
 $buildScript = Join-Path $ProjectRoot "scripts\build_wotmod.ps1"

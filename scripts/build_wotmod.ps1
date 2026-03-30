@@ -57,14 +57,27 @@ if (-not (Test-Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 }
 
+[xml]$metaXmlDoc = Get-Content -Raw -LiteralPath $metaPath
+$metaVersion = "$($metaXmlDoc.root.version)"
+if (-not $metaVersion) {
+    throw "Could not read <version> from $metaPath"
+}
+
+$sourceText = [System.IO.File]::ReadAllText($sourcePath)
+if ($sourceText.IndexOf('__MOD_VERSION__') -lt 0) {
+    throw "MOD_VERSION placeholder '__MOD_VERSION__' not found in $sourcePath"
+}
+$patchedSourceText = $sourceText.Replace('__MOD_VERSION__', $metaVersion)
+$patchedSourceBytes = [System.Text.Encoding]::UTF8.GetBytes($patchedSourceText)
+
 $files = @()
 $files += [PSCustomObject]@{
     Name = "scripts/client/gui/mods/mod_wot_telegram_notifier.py"
-    Data = [System.IO.File]::ReadAllBytes($sourcePath)
+    Data = $patchedSourceBytes
 }
 $files += [PSCustomObject]@{
     Name = "scripts/client/mods/mod_wot_telegram_notifier.py"
-    Data = [System.IO.File]::ReadAllBytes($sourcePath)
+    Data = $patchedSourceBytes
 }
 $files += [PSCustomObject]@{
     Name = "meta.xml"
