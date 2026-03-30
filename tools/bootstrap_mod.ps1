@@ -83,11 +83,19 @@ if (-not $activeVersion) {
     throw "Cannot detect active res_mods version from $pathsXml"
 }
 
-$artifact = Join-Path $GameRoot ("mods\\{0}\\wot_telegram_notifier_current.wotmod" -f $activeVersion)
-if (Test-Path $artifact) {
-    Write-Host "Artifact ready: $artifact"
-} else {
-    Write-Host "Warning: no artifact for active version $activeVersion yet."
+$artifactGui = Join-Path $GameRoot ("res_mods\\{0}\\scripts\\client\\gui\\mods\\mod_wot_telegram_notifier.pyc" -f $activeVersion)
+$artifactClient = Join-Path $GameRoot ("res_mods\\{0}\\scripts\\client\\mods\\mod_wot_telegram_notifier.pyc" -f $activeVersion)
+$allReady = $true
+foreach ($artifact in @($artifactGui, $artifactClient)) {
+    if (Test-Path $artifact) {
+        Write-Host "Runtime ready: $artifact"
+    } else {
+        Write-Host "Warning: missing runtime file for active version $activeVersion: $artifact"
+        $allReady = $false
+    }
+}
+if (-not $allReady) {
+    Write-Host "Run 'git pull' and check branch 'mod'."
 }
 
 Write-Host "Bootstrap completed."

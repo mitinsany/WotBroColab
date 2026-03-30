@@ -1,8 +1,11 @@
 ﻿# Troubleshooting (mod branch)
 
 ## Мод не загрузился
-- Проверьте `python.log` по строкам `wot_telegram_notifier_current.wotmod`.
-- Если есть `load error`, выполните `git pull` и запустите игру снова.
+- Проверьте `python.log` по строкам `[WoT TG]`.
+- Проверьте, что присутствуют оба runtime-файла:
+  - `res_mods/<active_version>/scripts/client/gui/mods/mod_wot_telegram_notifier.pyc`
+  - `res_mods/<active_version>/scripts/client/mods/mod_wot_telegram_notifier.pyc`
+- Выполните `git pull` и запустите игру снова.
 
 ## Нет Telegram-сообщений по событиям
 - Проверьте `mods/.env` и значения `WOT_TG_BOT_TOKEN`, `WOT_TG_CHAT_ID`.
