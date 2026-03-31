@@ -1,7 +1,8 @@
 param(
     [string]$GameRoot = "D:\GAMES\World_of_Tanks_EU",
     [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
-    [string]$Python2Exe = "D:\SOFT\Python2.7\python.exe"
+    [string]$Python2Exe = "D:\SOFT\Python2.7\python.exe",
+    [switch]$SkipBuild
 )
 
 Set-StrictMode -Version Latest
@@ -38,17 +39,15 @@ $activeVersion = Get-ActiveResModsVersion -PathsXmlPath $pathsXml
 
 $buildScript = Join-Path $ProjectRoot "scripts\build_wotmod.ps1"
 $releaseRootRel = Join-Path "build" "pyc_release"
-& $buildScript -ProjectRoot $ProjectRoot -WotVersion $activeVersion -OutputRoot $releaseRootRel -Python2Exe $Python2Exe
+if (-not $SkipBuild) {
+    & $buildScript -ProjectRoot $ProjectRoot -WotVersion $activeVersion -OutputRoot $releaseRootRel -Python2Exe $Python2Exe
+}
 
 $releaseRoot = Join-Path $ProjectRoot $releaseRootRel
 $sourceGuiPyc = Join-Path $releaseRoot ("res_mods\{0}\scripts\client\gui\mods\mod_wot_telegram_notifier.pyc" -f $activeVersion)
-$sourceClientPyc = Join-Path $releaseRoot ("res_mods\{0}\scripts\client\mods\mod_wot_telegram_notifier.pyc" -f $activeVersion)
 
 if (-not (Test-Path $sourceGuiPyc)) {
     throw "Missing built file: $sourceGuiPyc"
-}
-if (-not (Test-Path $sourceClientPyc)) {
-    throw "Missing built file: $sourceClientPyc"
 }
 
 $targetGuiDir = Join-Path $GameRoot ("res_mods\{0}\scripts\client\gui\mods" -f $activeVersion)
@@ -56,16 +55,16 @@ $targetClientDir = Join-Path $GameRoot ("res_mods\{0}\scripts\client\mods" -f $a
 if (-not (Test-Path $targetGuiDir)) {
     New-Item -ItemType Directory -Path $targetGuiDir -Force | Out-Null
 }
-if (-not (Test-Path $targetClientDir)) {
-    New-Item -ItemType Directory -Path $targetClientDir -Force | Out-Null
-}
 
 $targetGuiPyc = Join-Path $targetGuiDir "mod_wot_telegram_notifier.pyc"
 $targetClientPyc = Join-Path $targetClientDir "mod_wot_telegram_notifier.pyc"
 Copy-Item -LiteralPath $sourceGuiPyc -Destination $targetGuiPyc -Force
-Copy-Item -LiteralPath $sourceClientPyc -Destination $targetClientPyc -Force
 Write-Host "Updated runtime: $targetGuiPyc"
-Write-Host "Updated runtime: $targetClientPyc"
+
+if (Test-Path $targetClientPyc) {
+    Remove-Item -LiteralPath $targetClientPyc -Force
+    Write-Host "Removed runtime: $targetClientPyc"
+}
 
 $legacyGuiPy = Join-Path $targetGuiDir "mod_wot_telegram_notifier.py"
 $legacyClientPy = Join-Path $targetClientDir "mod_wot_telegram_notifier.py"
@@ -83,3 +82,4 @@ if (Test-Path $legacyWotmod) {
 }
 
 Write-Host ("Active version: {0}" -f $activeVersion)
+Write-Host "Runtime layout: gui"

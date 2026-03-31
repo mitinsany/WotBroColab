@@ -1,11 +1,14 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
 import os
 import json
 import time
 import glob
 import socket
+import hashlib
 import threading
+import atexit
+import random
 
 try:
     _marker_path = os.path.join(os.getcwd(), 'logs', 'wot_tg_import_marker.log')
@@ -42,10 +45,10 @@ BATTLE_START = 'BATTLE_START'
 BATTLE_END = 'BATTLE_END'
 
 EVENT_LABELS = {
-    PLAYER_LOGIN: u'вход в игру',
-    PLAYER_LOGOUT: u'выход из игры',
-    BATTLE_START: u'начало боя',
-    BATTLE_END: u'завершение боя',
+    PLAYER_LOGIN: u'РІС…РѕРґ РІ РёРіСЂСѓ',
+    PLAYER_LOGOUT: u'РІС‹С…РѕРґ РёР· РёРіСЂС‹',
+    BATTLE_START: u'РЅР°С‡Р°Р»Рѕ Р±РѕСЏ',
+    BATTLE_END: u'Р·Р°РІРµСЂС€РµРЅРёРµ Р±РѕСЏ',
 }
 
 BOT_TOKEN = ''
@@ -55,6 +58,7 @@ QUEUE_SIZE = 128
 
 _EVENT_QUEUE = None
 _WORKER = None
+_POLL_WORKER = None
 _STOP_EVENT = threading.Event()
 _LOG_FILE = None
 _COMPUTER_NAME = 'UNKNOWN-PC'
@@ -62,18 +66,23 @@ _UPDATE_INFO = None
 _UPDATE_NOTICE_SHOWN = False
 _PLAYER_LOGGED_IN = False
 _UPDATE_NOTICE_RETRY_SCHEDULED = False
+_LAST_EVENT_AT = {}
+_LAST_UPDATE_ID = None
+_IN_BATTLE = False
+_LAST_KNOWN_PLAYER = 'unknown_player'
+_CURRENT_ACCOUNT_NAME = None
 
 
 def _log(msg):
     try:
-        print '[WoT TG] %s' % msg
+        print '[WotBroColab] %s' % msg
     except Exception:
         pass
     try:
         if _LOG_FILE:
             f = open(_LOG_FILE, 'a')
             try:
-                f.write('%s [WoT TG] %s\n' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), msg))
+                f.write('%s [WotBroColab] %s\n' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), msg))
             finally:
                 f.close()
     except Exception:
@@ -194,13 +203,119 @@ def _enabled():
 
 
 def _resolve_computer_name():
+    raw = ''
     try:
-        name = socket.gethostname()
+        raw = socket.gethostname() or ''
+    except Exception:
+        raw = ''
+    if not raw:
+        raw = (os.environ.get('COMPUTERNAME') or '').strip()
+    if not raw:
+        raw = 'UNKNOWN-PC'
+    try:
+        data = raw
+        try:
+            if isinstance(data, unicode):
+                data = data.encode('utf-8')
+        except Exception:
+            pass
+        digest = hashlib.sha256(data).hexdigest()[:2]
+        if digest:
+            return digest
+    except Exception:
+        pass
+    return '000000'
+
+
+def _safe_player_name(value):
+    try:
+        if value is None:
+            return None
+        if not isinstance(value, basestring):
+            value = str(value)
+        value = value.strip()
+        if not value:
+            return None
+        low = value.lower()
+        if low in ('none', 'unknown', 'unknown_player', 'mod_init'):
+            return None
+        return value
+    except Exception:
+        return None
+
+
+def _player_name_from_obj(obj):
+    if obj is None:
+        return None
+    for attr in ('name', 'playerName', '_PlayerAvatar__name', '_name', 'userName'):
+        try:
+            val = getattr(obj, attr, None)
+            val = _safe_player_name(val)
+            if val:
+                return val
+        except Exception:
+            pass
+    return None
+
+
+def _current_player_name():
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        name = _player_name_from_obj(player)
         if name:
             return name
     except Exception:
         pass
-    return (os.environ.get('COMPUTERNAME') or 'UNKNOWN-PC').strip() or 'UNKNOWN-PC'
+    return None
+
+
+def _remember_player_name(name):
+    global _LAST_KNOWN_PLAYER
+    safe = _safe_player_name(name)
+    if safe:
+        _LAST_KNOWN_PLAYER = safe
+    return _LAST_KNOWN_PLAYER
+
+
+def _resolve_player_name(context_obj=None, args=None):
+    name = _player_name_from_obj(context_obj)
+    if name:
+        return name
+
+    if args:
+        for item in args:
+            name = _player_name_from_obj(item)
+            if name:
+                return name
+
+    name = _current_player_name()
+    if name:
+        return _remember_player_name(name)
+    return _LAST_KNOWN_PLAYER or 'unknown_player'
+
+
+def _format_event_time(ts):
+    try:
+        return time.strftime('%d.%m.%y %H:%M:%S', time.localtime(float(ts)))
+    except Exception:
+        return time.strftime('%d.%m.%y %H:%M:%S', time.localtime())
+
+
+def _escape_markdown_v2(text):
+    try:
+        if text is None:
+            return u''
+        if not isinstance(text, unicode):
+            text = unicode(str(text), 'utf-8', 'ignore')
+        for ch in u'\\_[]()~`>#+-=|{}.!*':
+            text = text.replace(ch, u'\\' + ch)
+        return text
+    except Exception:
+        try:
+            return unicode(text)
+        except Exception:
+            return u''
 
 
 def _to_int_list(version_text):
@@ -301,7 +416,7 @@ def _try_show_update_notice():
         return
     if not _UPDATE_INFO:
         return
-    text = u'[WoT TG] Доступна новая версия мода: %s -> %s. Обновите мод командой git pull.' % (
+        text = u'[WotBroColab] Р”РѕСЃС‚СѓРїРЅР° РЅРѕРІР°СЏ РІРµСЂСЃРёСЏ РјРѕРґР°: %s -> %s. РћР±РЅРѕРІРёС‚Рµ РјРѕРґ РєРѕРјР°РЅРґРѕР№ git pull.' % (
         _UPDATE_INFO.get('local'),
         _UPDATE_INFO.get('remote'),
     )
@@ -312,18 +427,73 @@ def _try_show_update_notice():
         _schedule_update_notice_retry()
 
 
-def _on_player_login():
-    global _PLAYER_LOGGED_IN
-    _PLAYER_LOGGED_IN = True
-    _queue_event(PLAYER_LOGIN)
-    _try_show_update_notice()
+def _on_player_login(player_name=None):
+    _reconcile_account_state(_current_player_name())
+
+
+def _on_player_logout(player_name=None, immediate=False):
+    global _PLAYER_LOGGED_IN, _CURRENT_ACCOUNT_NAME
+    if not _PLAYER_LOGGED_IN:
+        return
+    player_name = _safe_player_name(player_name) or _CURRENT_ACCOUNT_NAME or _LAST_KNOWN_PLAYER
+    _PLAYER_LOGGED_IN = False
+    _CURRENT_ACCOUNT_NAME = None
+    if immediate:
+        _send_event_immediate(PLAYER_LOGOUT, player_name=player_name)
+    else:
+        _queue_event(PLAYER_LOGOUT, player_name=player_name)
+
+
+def _reconcile_account_state(observed_name=None):
+    global _CURRENT_ACCOUNT_NAME, _PLAYER_LOGGED_IN
+    name = _safe_player_name(observed_name) or _current_player_name() or None
+    if name:
+        _remember_player_name(name)
+    current = _CURRENT_ACCOUNT_NAME
+
+    if current is None and name:
+        _CURRENT_ACCOUNT_NAME = name
+        _PLAYER_LOGGED_IN = True
+        _queue_event(PLAYER_LOGIN, player_name=name)
+        _try_show_update_notice()
+        return
+
+    if current and name and current != name:
+        _send_event_immediate(PLAYER_LOGOUT, player_name=current)
+        _CURRENT_ACCOUNT_NAME = name
+        _PLAYER_LOGGED_IN = True
+        _queue_event(PLAYER_LOGIN, player_name=name)
+        _try_show_update_notice()
+        return
+
+    if current and name and current == name:
+        _PLAYER_LOGGED_IN = True
+        return
+
+    if current and not name:
+        _PLAYER_LOGGED_IN = True
 
 
 def _format_message(event_type, payload):
-    label = EVENT_LABELS.get(event_type, event_type)
     player = payload.get('player') or 'unknown_player'
-
-    msg = u'[%s] Событие: %s, игрок: %s' % (_COMPUTER_NAME, label, player)
+    player_md = _escape_markdown_v2(player)
+    ts_text = _format_event_time(payload.get('timestamp'))
+    prefix = u'\\[%s\\]\\[%s\\]\\[%s\\]' % (
+        _escape_markdown_v2(_COMPUTER_NAME),
+        _escape_markdown_v2(ts_text),
+        player_md
+    )
+    if event_type == PLAYER_LOGIN:
+        msg = u'%s Вошел в игру' % prefix
+    elif event_type == PLAYER_LOGOUT:
+        msg = u'%s Вышел из игры' % prefix
+    elif event_type == BATTLE_START:
+        msg = u'%s Зашел в бой' % prefix
+    elif event_type == BATTLE_END:
+        msg = u'%s Вышел из боя' % prefix
+    else:
+        label = EVENT_LABELS.get(event_type, event_type)
+        msg = u'%s Событие: %s' % (prefix, _escape_markdown_v2(label))
     if event_type == BATTLE_END:
         meta = payload.get('meta') or {}
         details = []
@@ -338,11 +508,21 @@ def _format_message(event_type, payload):
     return msg
 
 
+def _prefix_now(player_name=None):
+    player = _safe_player_name(player_name) or _current_player_name() or 'unknown_player'
+    return u'\\[%s\\]\\[%s\\]\\[%s\\]' % (
+        _escape_markdown_v2(_COMPUTER_NAME),
+        _escape_markdown_v2(_format_event_time(time.time())),
+        _escape_markdown_v2(player)
+    )
+
+
 def _send_to_telegram(text):
     url = 'https://api.telegram.org/bot%s/sendMessage' % BOT_TOKEN
     payload = urllib.urlencode({
         'chat_id': CHAT_ID,
         'text': text,
+        'parse_mode': 'MarkdownV2',
         'disable_web_page_preview': 'true',
     })
     req = urllib2.Request(url, payload)
@@ -355,6 +535,147 @@ def _send_to_telegram(text):
     except Exception:
         # If parse fails, do not crash the game.
         pass
+
+
+def _telegram_api_call(method, params=None):
+    if urllib is None or urllib2 is None:
+        raise RuntimeError('urllib unavailable')
+    if not BOT_TOKEN:
+        raise RuntimeError('empty bot token')
+    url = 'https://api.telegram.org/bot%s/%s' % (BOT_TOKEN, method)
+    payload = urllib.urlencode(params or {})
+    req = urllib2.Request(url, payload)
+    resp = urllib2.urlopen(req, timeout=TIMEOUT_SECONDS)
+    body = resp.read()
+    try:
+        data = json.loads(body)
+    except Exception:
+        raise RuntimeError('invalid telegram json')
+    if not isinstance(data, dict) or not data.get('ok'):
+        raise RuntimeError(str(data.get('description') if isinstance(data, dict) else 'telegram error'))
+    return data.get('result')
+
+
+def _ensure_bot_commands():
+    commands = json.dumps([{'command': 'ping', 'description': 'Проверка статуса мода в игре'}], ensure_ascii=False)
+    try:
+        _telegram_api_call('setMyCommands', {'commands': commands})
+        _log('Bot menu command /ping registered')
+    except Exception as e:
+        _log('setMyCommands failed: %s' % e)
+
+
+def _sync_updates_offset():
+    global _LAST_UPDATE_ID
+    try:
+        result = _telegram_api_call('getUpdates', {'limit': '1'})
+        if isinstance(result, list) and len(result) > 0:
+            upd = result[-1]
+            upd_id = upd.get('update_id')
+            if upd_id is not None:
+                _LAST_UPDATE_ID = int(upd_id) + 1
+                _log('Update offset initialized: %s' % _LAST_UPDATE_ID)
+    except Exception as e:
+        _log('Initial getUpdates failed: %s' % e)
+
+
+def _status_text():
+    in_battle = False
+    try:
+        import BigWorld
+        player = BigWorld.player()
+        if player is not None:
+            arena = getattr(player, 'arena', None)
+            if arena is not None:
+                in_battle = True
+    except Exception:
+        in_battle = False
+    if in_battle:
+        return u'В бою'
+    if _PLAYER_LOGGED_IN:
+        return u'в игре'
+    return u'вне игры'
+
+
+def _handle_ping_command():
+    try:
+        username = _current_player_name() or _CURRENT_ACCOUNT_NAME or _LAST_KNOWN_PLAYER or 'unknown_player'
+        _remember_player_name(username)
+        msg = u'%s %s' % (_prefix_now(username), _escape_markdown_v2(_status_text()))
+        _send_to_telegram(msg)
+        _log('Ping response sent')
+    except Exception as e:
+        _log('Ping response failed: %s' % e)
+
+
+def _poll_commands_once():
+    global _LAST_UPDATE_ID
+    params = {'limit': '25'}
+    if _LAST_UPDATE_ID is not None:
+        params['offset'] = str(_LAST_UPDATE_ID)
+    result = _telegram_api_call('getUpdates', params)
+    if not isinstance(result, list):
+        return
+    for upd in result:
+        upd_id = upd.get('update_id')
+        if upd_id is not None:
+            try:
+                upd_id_int = int(upd_id)
+                if _LAST_UPDATE_ID is None or upd_id_int >= _LAST_UPDATE_ID:
+                    _LAST_UPDATE_ID = upd_id_int + 1
+            except Exception:
+                pass
+        msg_obj = upd.get('message') or upd.get('edited_message') or {}
+        text = (msg_obj.get('text') or '').strip()
+        if not text:
+            continue
+        cmd = text.split(' ', 1)[0].strip().lower()
+        if not (cmd == '/ping' or cmd.startswith('/ping@')):
+            continue
+        chat = msg_obj.get('chat') or {}
+        chat_id = str(chat.get('id') or '').strip()
+        if CHAT_ID and chat_id and chat_id != CHAT_ID:
+            continue
+        _handle_ping_command()
+
+
+def _command_poll_loop():
+    while not _STOP_EVENT.is_set():
+        delay = random.uniform(5.0, 10.0)
+        if _STOP_EVENT.wait(delay):
+            break
+        try:
+            _reconcile_account_state(_current_player_name())
+            _poll_commands_once()
+        except Exception as e:
+            _log('Command poll failed: %s' % e)
+
+
+def _send_event_immediate(event_type, player_name=None, meta=None):
+    if not _enabled():
+        return
+    player = _safe_player_name(player_name) or _current_player_name() or _LAST_KNOWN_PLAYER or 'unknown_player'
+    _remember_player_name(player)
+    now = time.time()
+    if event_type in (PLAYER_LOGIN, PLAYER_LOGOUT):
+        key = '%s|%s' % (event_type, player)
+        last_ts = _LAST_EVENT_AT.get(key)
+        if last_ts is not None and (now - last_ts) < 8.0:
+            _log('Duplicate immediate event skipped: %s player=%s' % (event_type, player))
+            return
+        _LAST_EVENT_AT[key] = now
+    payload = {
+        'type': event_type,
+        'timestamp': now,
+        'player': player,
+        'meta': meta or {},
+    }
+    try:
+        text = _format_message(event_type, payload)
+        _send_to_telegram(text)
+        _log('Sent immediately: %s' % event_type)
+    except Exception as e:
+        _log('Immediate send failed (%s): %s' % (event_type, e))
 
 
 def _worker_loop():
@@ -377,24 +698,43 @@ def _worker_loop():
 
 
 def _start_worker():
-    global _EVENT_QUEUE, _WORKER
+    global _EVENT_QUEUE, _WORKER, _POLL_WORKER
     if _EVENT_QUEUE is None:
         _EVENT_QUEUE = queue_mod.Queue(QUEUE_SIZE)
     if _WORKER is not None and _WORKER.is_alive():
+        pass
+    else:
+        _STOP_EVENT.clear()
+        _WORKER = threading.Thread(target=_worker_loop)
+        _WORKER.setDaemon(True)
+        _WORKER.start()
+
+    if _POLL_WORKER is not None and _POLL_WORKER.is_alive():
         return
     _STOP_EVENT.clear()
-    _WORKER = threading.Thread(target=_worker_loop)
-    _WORKER.setDaemon(True)
-    _WORKER.start()
+    _POLL_WORKER = threading.Thread(target=_command_poll_loop)
+    _POLL_WORKER.setDaemon(True)
+    _POLL_WORKER.start()
 
 
 def _queue_event(event_type, player_name=None, meta=None):
     if not _enabled():
         return
+    player = _safe_player_name(player_name) or _current_player_name() or _LAST_KNOWN_PLAYER or 'unknown_player'
+    _remember_player_name(player)
+    now = time.time()
+    if event_type in (PLAYER_LOGIN, PLAYER_LOGOUT):
+        key = '%s|%s' % (event_type, player)
+        last_ts = _LAST_EVENT_AT.get(key)
+        if last_ts is not None and (now - last_ts) < 8.0:
+            _log('Duplicate event skipped: %s player=%s' % (event_type, player))
+            return
+        _LAST_EVENT_AT[key] = now
+
     payload = {
         'type': event_type,
-        'timestamp': time.time(),
-        'player': player_name or 'unknown_player',
+        'timestamp': now,
+        'player': player,
         'meta': meta or {},
     }
     try:
@@ -431,9 +771,23 @@ def _install_hooks():
         import Account
         account_cls = getattr(Account, 'Account', None)
         if account_cls is not None:
-            if _wrap_method(account_cls, '_doCmdLogin', lambda *_: _on_player_login()):
+            if _wrap_method(
+                account_cls,
+                'onBecomePlayer',
+                lambda self, args, kwargs, result: _reconcile_account_state(_current_player_name())
+            ):
                 installed += 1
-            if _wrap_method(account_cls, 'onBecomeNonPlayer', lambda *_: _queue_event(PLAYER_LOGOUT)):
+            if _wrap_method(
+                account_cls,
+                '_doCmdLogin',
+                lambda self, args, kwargs, result: _reconcile_account_state(_current_player_name())
+            ):
+                installed += 1
+            if _wrap_method(
+                account_cls,
+                'onBecomeNonPlayer',
+                lambda self, args, kwargs, result: _reconcile_account_state(None)
+            ):
                 installed += 1
     except Exception as e:
         _log('Account hooks not installed: %s' % e)
@@ -442,14 +796,40 @@ def _install_hooks():
         import Avatar
         avatar_cls = getattr(Avatar, 'PlayerAvatar', None)
         if avatar_cls is not None:
-            if _wrap_method(avatar_cls, '_PlayerAvatar__startGUI', lambda *_: _queue_event(BATTLE_START)):
+            if _wrap_method(
+                avatar_cls,
+                '_PlayerAvatar__startGUI',
+                lambda self, args, kwargs, result: _on_battle_start(
+                    player_name=_resolve_player_name(self, args)
+                )
+            ):
                 installed += 1
-            if _wrap_method(avatar_cls, '_PlayerAvatar__destroyGUI', lambda *_: _queue_event(BATTLE_END)):
+            if _wrap_method(
+                avatar_cls,
+                '_PlayerAvatar__destroyGUI',
+                lambda self, args, kwargs, result: _on_battle_end(
+                    player_name=_resolve_player_name(self, args)
+                )
+            ):
                 installed += 1
     except Exception as e:
         _log('Avatar hooks not installed: %s' % e)
 
     _log('Hooks installed: %s' % installed)
+
+
+def _on_battle_start(player_name=None):
+    global _IN_BATTLE
+    _IN_BATTLE = True
+    _reconcile_account_state(_current_player_name())
+    _queue_event(BATTLE_START, player_name=player_name)
+
+
+def _on_battle_end(player_name=None):
+    global _IN_BATTLE
+    _IN_BATTLE = False
+    _reconcile_account_state(_current_player_name())
+    _queue_event(BATTLE_END, player_name=player_name)
 
 
 def init():
@@ -464,8 +844,18 @@ def init():
     elif urllib is None or urllib2 is None:
         _log('urllib/urllib2 not available; notifier disabled')
     else:
+        _ensure_bot_commands()
+        _sync_updates_offset()
         _start_worker()
-        _queue_event(PLAYER_LOGIN, player_name='mod_init', meta={'stage': 'startup'})
+        try:
+            atexit.register(
+                lambda: _on_player_logout(
+                    player_name=_current_player_name() or _CURRENT_ACCOUNT_NAME or _LAST_KNOWN_PLAYER,
+                    immediate=True
+                ) if _PLAYER_LOGGED_IN else None
+            )
+        except Exception as e:
+            _log('atexit register failed: %s' % e)
     _install_hooks()
     _log('Mod initialized')
 

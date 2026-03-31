@@ -10,9 +10,9 @@ World of Tanks mod: Telegram notifier for game events (login/logout/battle start
 
 ## Deployment layout (current working setup)
 - Mod entrypoint:
-  - `D:\GAMES\World_of_Tanks_EU\res_mods\2.2.0.2\scripts\client\gui\mods\mod_wot_telegram_notifier.py`
+  - `D:\GAMES\World_of_Tanks\res_mods\2.2.0.2\scripts\client\gui\mods\mod_wot_telegram_notifier.pyc`
 - Env file:
-  - `D:\GAMES\World_of_Tanks_EU\mods\.env`
+  - `D:\GAMES\World_of_Tanks\mods\.env`
 
 ## Runtime constraints
 - Client runtime is Python 2 (see `python.log` markers like `Python2`).
@@ -32,11 +32,12 @@ Optional:
 
 ## Validation checklist
 1. Launch game.
-2. Check `D:\GAMES\World_of_Tanks_EU\python.log` for `[WoT TG]` messages.
+2. Check `D:\GAMES\World_of_Tanks\python.log` for `[WotBroColab]` messages.
 3. Trigger events: login, logout, battle start, battle end.
 4. Confirm messages arrive in Telegram.
 
 ## Notes
 - If mod does not start, first re-check `paths.xml` and copy mod to the currently active `res_mods/<version>/scripts/client/gui/mods`.
 - If token was exposed in logs/history, rotate token in BotFather and update `.env`.
+
 

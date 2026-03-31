@@ -3,5 +3,5 @@
   <id>wot.telegram.notifier</id>
   <name>WoT Telegram Notifier</name>
   <description>Telegram notifications for login/logout/battle start/battle end.</description>
-  <version>1.0.3</version>
+  <version>2.2.0.2.0</version>
 </root>

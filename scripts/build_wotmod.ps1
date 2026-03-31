@@ -120,8 +120,7 @@ if (-not (Test-Path $compiledPycPath)) {
 }
 
 $targets = @(
-    "res_mods\$WotVersion\scripts\client\gui\mods\mod_wot_telegram_notifier.pyc",
-    "res_mods\$WotVersion\scripts\client\mods\mod_wot_telegram_notifier.pyc"
+    "res_mods\$WotVersion\scripts\client\gui\mods\mod_wot_telegram_notifier.pyc"
 )
 
 foreach ($relativeTarget in $targets) {
@@ -132,6 +131,12 @@ foreach ($relativeTarget in $targets) {
     }
     Copy-Item -LiteralPath $compiledPycPath -Destination $targetPath -Force
     Write-Host ("Created runtime file: {0}" -f $targetPath)
+}
+
+$legacyClientTarget = Join-Path $outputRootPath ("res_mods\{0}\scripts\client\mods\mod_wot_telegram_notifier.pyc" -f $WotVersion)
+if (Test-Path $legacyClientTarget) {
+    Remove-Item -LiteralPath $legacyClientTarget -Force
+    Write-Host ("Removed legacy runtime file: {0}" -f $legacyClientTarget)
 }
 
 Remove-DirectorySafe -PathToRemove $tmpRoot

@@ -1,11 +1,11 @@
 ﻿{
     "mod_id":  "wot.telegram.notifier",
-    "version":  "1.0.3",
+    "version":  "2.2.0.2.0",
     "release_date":  "2026-03-31",
     "channel":  "stable",
     "wot_version":  "2.2.0.2",
     "mod_branch":  "mod",
     "artifact_path":  "res_mods/2.2.0.2/scripts/client/gui/mods/mod_wot_telegram_notifier.pyc",
-    "changelog_short":  "Compatibility packaging fix, stable env path, onboarding improvements.",
+    "changelog_short":  "GUI-only runtime deployment, updated battle/ping wording, WotBroColab log prefix.",
     "update_command":  "git pull"
 }
