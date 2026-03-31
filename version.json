@@ -1,13 +1,13 @@
-﻿{
+{
   "mod_id": "wot.telegram.notifier",
-  "version": "1.0.3",
+  "version": "2.2.0.2.0",
   "release_date": "2026-03-31",
   "channel": "stable",
   "wot_version": "2.2.0.2",
   "mod_branch": "mod",
-  "mod_commit": "71e537e",
-  "mod_commit_url": "https://github.com/mitinsany/WotBroColab/commit/71e537e",
-  "artifact_path": "mods/2.2.0.2/wot_telegram_notifier_current.wotmod",
-  "changelog_short": "In-game update notice after login, external checker removed, manifest removed.",
+  "mod_commit": "f102f52",
+  "mod_commit_url": "https://github.com/mitinsany/WotBroColab/commit/f102f522523ace4f1529252940ab0067b7ef5dc0",
+  "artifact_path": "res_mods/2.2.0.2/scripts/client/gui/mods/mod_wot_telegram_notifier.pyc",
+  "changelog_short": "GUI-only runtime deployment, updated battle/ping wording, WotBroColab log prefix, bootstrap fix.",
   "update_command": "git pull"
 }
