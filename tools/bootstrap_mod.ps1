@@ -84,17 +84,10 @@ if (-not $activeVersion) {
 }
 
 $artifactGui = Join-Path $GameRoot ("res_mods\\{0}\\scripts\\client\\gui\\mods\\mod_wot_telegram_notifier.pyc" -f $activeVersion)
-$artifactClient = Join-Path $GameRoot ("res_mods\\{0}\\scripts\\client\\mods\\mod_wot_telegram_notifier.pyc" -f $activeVersion)
-$allReady = $true
-foreach ($artifact in @($artifactGui, $artifactClient)) {
-    if (Test-Path $artifact) {
-        Write-Host "Runtime ready: $artifact"
-    } else {
-        Write-Host "Warning: missing runtime file for active version $activeVersion: $artifact"
-        $allReady = $false
-    }
-}
-if (-not $allReady) {
+if (Test-Path $artifactGui) {
+    Write-Host "Runtime ready: $artifactGui"
+} else {
+    Write-Host ("Warning: missing runtime file for active version {0}: {1}" -f $activeVersion, $artifactGui)
     Write-Host "Run 'git pull' and check branch 'mod'."
 }
 
