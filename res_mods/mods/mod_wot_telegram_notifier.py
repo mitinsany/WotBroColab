@@ -3,7 +3,6 @@
 import os
 import json
 import time
-import glob
 import socket
 import hashlib
 import threading
@@ -102,7 +101,7 @@ def _init_file_log():
         _LOG_FILE = None
 
 
-def _read_env_file_candidates():
+def _read_config_file_candidates():
     result = []
     seen = set()
 
@@ -117,22 +116,16 @@ def _read_env_file_candidates():
 
     try:
         root = os.getcwd()
-        _add(os.path.join(root, '.env'))
-        _add(os.path.join(root, 'mods', '.env'))
-        for path in glob.glob(os.path.join(root, 'mods', '*', '.env')):
-            _add(path)
-        for path in glob.glob(os.path.join(root, 'res_mods', '*', '.env')):
-            _add(path)
-        for path in glob.glob(os.path.join(root, 'res_mods', '*', 'mods', '.env')):
-            _add(path)
+        _add(os.path.join(root, 'mods', 'wot_bro_colab.ini'))
+        _add(os.path.join(root, 'wot_bro_colab.ini'))
     except Exception:
         pass
 
     try:
         base = os.path.dirname(os.path.abspath(__file__))
         for _ in range(7):
-            _add(os.path.join(base, '.env'))
-            _add(os.path.join(base, 'mods', '.env'))
+            _add(os.path.join(base, 'mods', 'wot_bro_colab.ini'))
+            _add(os.path.join(base, 'wot_bro_colab.ini'))
             parent = os.path.dirname(base)
             if parent == base:
                 break
@@ -143,30 +136,33 @@ def _read_env_file_candidates():
     return result
 
 
-def _load_dotenv_if_present():
-    for path in _read_env_file_candidates():
+def _load_config_map():
+    for path in _read_config_file_candidates():
         if not os.path.isfile(path):
             continue
         try:
+            result = {}
             f = open(path, 'r')
             try:
                 for raw in f:
                     line = raw.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith('#') or line.startswith(';'):
                         continue
                     if '=' not in line:
                         continue
                     key, value = line.split('=', 1)
                     key = key.strip()
                     value = value.strip().strip('"').strip("'")
-                    if key and key not in os.environ:
-                        os.environ[key] = value
+                    if key:
+                        result[key] = value
             finally:
                 f.close()
-            _log('Loaded .env from %s' % path)
-            return
+            _log('Loaded config from %s' % path)
+            return result
         except Exception as e:
-            _log('Failed to read .env %s: %s' % (path, e))
+            _log('Failed to read config %s: %s' % (path, e))
+    _log('Config file not found: mods/wot_bro_colab.ini')
+    return {}
 
 
 def _safe_int(val, default):
@@ -188,12 +184,12 @@ def _safe_float(val, default):
 
 def _load_config():
     global BOT_TOKEN, CHAT_ID, TIMEOUT_SECONDS, QUEUE_SIZE
-    _load_dotenv_if_present()
+    cfg = _load_config_map()
 
-    BOT_TOKEN = (os.getenv('WOT_TG_BOT_TOKEN') or '').strip()
-    CHAT_ID = (os.getenv('WOT_TG_CHAT_ID') or '').strip()
-    TIMEOUT_SECONDS = _safe_float((os.getenv('WOT_TG_TIMEOUT_SECONDS') or '3.0').strip(), 3.0)
-    QUEUE_SIZE = _safe_int((os.getenv('WOT_TG_QUEUE_SIZE') or '128').strip(), 128)
+    BOT_TOKEN = (cfg.get('WOT_TG_BOT_TOKEN') or '').strip()
+    CHAT_ID = (cfg.get('WOT_TG_CHAT_ID') or '').strip()
+    TIMEOUT_SECONDS = _safe_float((cfg.get('WOT_TG_TIMEOUT_SECONDS') or '3.0').strip(), 3.0)
+    QUEUE_SIZE = _safe_int((cfg.get('WOT_TG_QUEUE_SIZE') or '128').strip(), 128)
     if QUEUE_SIZE < 1:
         QUEUE_SIZE = 1
 

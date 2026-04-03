@@ -4,7 +4,7 @@ param(
     [string]$MetaXml = "packaging\meta.xml",
     [string]$WotVersion = "2.2.0.2",
     [string]$OutputRoot = "build\pyc_release",
-    [string]$Python2Exe = "D:\SOFT\Python2.7\python.exe"
+    [string]$Python2Exe = "python"
 )
 
 Set-StrictMode -Version Latest
@@ -25,8 +25,6 @@ function Resolve-Python2Path {
         }
     } catch {
     }
-
-    $candidates += "D:\SOFT\Python2.7\python.exe"
 
     foreach ($candidate in $candidates) {
         if (-not $candidate) {

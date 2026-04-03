@@ -1,5 +1,5 @@
 param(
-    [string]$GameRoot = "D:\GAMES\World_of_Tanks_EU"
+    [string]$GameRoot = (Get-Location).Path
 )
 
 Set-StrictMode -Version Latest

@@ -32,8 +32,10 @@ function Get-DosTimeDate([DateTime]$dt) {
     return @([uint16]$dosTime, [uint16]$dosDate)
 }
 
-$srcMod = "D:\GAMES\World_of_Tanks_EU\res_mods\2.2.0.2\scripts\client\gui\mods\mod_wot_telegram_notifier.py"
-$out = "D:\GAMES\World_of_Tanks_EU\mods\2.2.0.2\wot_telegram_notifier_store.wotmod"
+param(
+    [string]$SrcMod = ".\\res_mods\\mods\\mod_wot_telegram_notifier.py",
+    [string]$Out = ".\\build\\wot_telegram_notifier_store.wotmod"
+)
 
 $metaText = @'
 <?xml version="1.0" encoding="utf-8"?>
@@ -48,14 +50,14 @@ $metaText = @'
 $files = @()
 $files += [PSCustomObject]@{
     Name = "scripts/client/gui/mods/mod_wot_telegram_notifier.py"
-    Data = [System.IO.File]::ReadAllBytes($srcMod)
+    Data = [System.IO.File]::ReadAllBytes($SrcMod)
 }
 $files += [PSCustomObject]@{
     Name = "meta.xml"
     Data = [System.Text.Encoding]::UTF8.GetBytes($metaText)
 }
 
-if (Test-Path $out) { Remove-Item $out -Force }
+if (Test-Path $Out) { Remove-Item $Out -Force }
 
 $table = New-Crc32Table
 $now = Get-Date
@@ -63,7 +65,7 @@ $td = Get-DosTimeDate $now
 $dosTime = $td[0]
 $dosDate = $td[1]
 
-$fs = [System.IO.File]::Open($out, [System.IO.FileMode]::CreateNew)
+$fs = [System.IO.File]::Open($Out, [System.IO.FileMode]::CreateNew)
 $bw = New-Object System.IO.BinaryWriter($fs)
 
 $central = New-Object System.Collections.Generic.List[object]
@@ -140,4 +142,4 @@ $bw.Flush()
 $bw.Dispose()
 $fs.Dispose()
 
-Write-Output ("created:" + $out)
+Write-Output ("created:" + $Out)

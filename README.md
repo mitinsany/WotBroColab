@@ -10,7 +10,7 @@
 ## Development essentials
 - Runtime WoT: Python 2.
 - Основной исходник: `res_mods/mods/mod_wot_telegram_notifier.py`.
-- Env у пользователя: `D:\GAMES\World_of_Tanks_EU\mods\.env`.
+- Конфиг у пользователя: `<GAME_ROOT>/mods/wot_bro_colab.ini`.
 
 ## Release source of truth
 - `packaging/meta.xml` -> версия мода.

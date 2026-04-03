@@ -1,7 +1,7 @@
 param(
-    [string]$GameRoot = "D:\GAMES\World_of_Tanks_EU",
+    [string]$GameRoot = (Get-Location).Path,
     [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
-    [string]$Python2Exe = "D:\SOFT\Python2.7\python.exe",
+    [string]$Python2Exe = "python",
     [switch]$SkipBuild
 )
 

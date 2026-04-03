@@ -1,17 +1,17 @@
 ﻿# Troubleshooting
 
 ## Мод не загрузился
-- Проверьте `D:\GAMES\World_of_Tanks_EU\python.log` по строкам `[WotBroColab]`.
+- Проверьте `<GAME_ROOT>/python.log` по строкам `[WotBroColab]`.
 - Убедитесь, что существуют файлы:
   - `res_mods/<active_version>/scripts/client/gui/mods/mod_wot_telegram_notifier.pyc`
 - Перезапустите установку: `powershell -ExecutionPolicy Bypass -File .\scripts\install_or_update.ps1`.
 
 ## Нет сообщений в Telegram
-- Проверьте наличие `D:\GAMES\World_of_Tanks_EU\mods\.env`.
-- Убедитесь, что в `.env` заполнены `WOT_TG_BOT_TOKEN` и `WOT_TG_CHAT_ID`.
-- Проверьте `D:\GAMES\World_of_Tanks_EU\logs\wot_tg_mod.log` по маркеру `[WotBroColab]`.
+- Проверьте наличие `<GAME_ROOT>/mods/wot_bro_colab.ini`.
+- Убедитесь, что в `wot_bro_colab.ini` заполнены `WOT_TG_BOT_TOKEN` и `WOT_TG_CHAT_ID`.
+- Проверьте `<GAME_ROOT>/logs/wot_tg_mod.log` по маркеру `[WotBroColab]`.
 
-## Не найден .env
-- Создайте `D:\GAMES\World_of_Tanks_EU\mods\.env` на основе `.env.example`.
-- Не размещайте `.env` внутри версии (`mods/2.2.0.2/.env`) — используйте только корень `mods`.
+## Не найден wot_bro_colab.ini
+- Создайте `<GAME_ROOT>/mods/wot_bro_colab.ini` на основе `wot_bro_colab.ini.example`.
+- Не размещайте `wot_bro_colab.ini` внутри версии (`mods/2.2.0.2/`) — используйте только корень `mods`.
 

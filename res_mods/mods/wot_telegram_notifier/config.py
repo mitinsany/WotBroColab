@@ -17,18 +17,13 @@ class ModConfig:
         return bool(self.bot_token and self.chat_id)
 
 
-def load_config_from_env(
-    *,
-    token_var: str = "WOT_TG_BOT_TOKEN",
-    chat_var: str = "WOT_TG_CHAT_ID",
-    timeout_var: str = "WOT_TG_TIMEOUT_SECONDS",
-    queue_size_var: str = "WOT_TG_QUEUE_SIZE",
-) -> ModConfig:
-    token = (os.getenv(token_var) or "").strip()
-    chat_id = (os.getenv(chat_var) or "").strip()
+def load_config_from_ini(path: str) -> ModConfig:
+    values = _read_ini_kv(path)
+    token = (values.get("WOT_TG_BOT_TOKEN") or "").strip()
+    chat_id = (values.get("WOT_TG_CHAT_ID") or "").strip()
 
-    timeout_raw = (os.getenv(timeout_var) or "3.0").strip()
-    queue_raw = (os.getenv(queue_size_var) or "128").strip()
+    timeout_raw = (values.get("WOT_TG_TIMEOUT_SECONDS") or "3.0").strip()
+    queue_raw = (values.get("WOT_TG_QUEUE_SIZE") or "128").strip()
 
     timeout = _to_float(timeout_raw, fallback=3.0)
     queue_size = _to_int(queue_raw, fallback=128)
@@ -51,7 +46,27 @@ def missing_config_reason(config: ModConfig) -> Optional[str]:
         missing.append("WOT_TG_CHAT_ID")
     if not missing:
         return None
-    return "Missing required environment variables: {0}".format(", ".join(missing))
+    return "Missing required config keys: {0}".format(", ".join(missing))
+
+
+def _read_ini_kv(path: str) -> dict:
+    if not os.path.isfile(path):
+        return {}
+
+    parsed = {}
+    with open(path, "r", encoding="utf-8") as stream:
+        for raw in stream:
+            line = raw.strip()
+            if not line or line.startswith("#") or line.startswith(";"):
+                continue
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                parsed[key] = value
+    return parsed
 
 
 def _to_float(value: str, *, fallback: float) -> float:

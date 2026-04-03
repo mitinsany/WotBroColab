@@ -1,4 +1,4 @@
-# Build artifacts
+﻿# Build artifacts
 build/
 *.wotmod
 
@@ -15,3 +15,6 @@ _inspect_wotmod/
 # Local logs/notes
 zjmodsloader_decompiled.txt
 zjmodsloader_decompile_err.txt
+# Local runtime config
+mods/wot_bro_colab.ini
+
