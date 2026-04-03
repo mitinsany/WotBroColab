@@ -47,11 +47,11 @@ if ($hasLocalBranch) {
 
 git pull --ff-only origin $TargetBranch
 
-$envPath = Join-Path $GameRoot "mods\.env"
-$envExamplePath = Join-Path $GameRoot ".env.example"
-if (-not (Test-Path $envPath)) {
-    if (Test-Path $envExamplePath) {
-        Copy-Item -LiteralPath $envExamplePath -Destination $envPath -Force
+$configPath = Join-Path $GameRoot "mods\wot_bro_colab.ini"
+$configExamplePath = Join-Path $GameRoot "wot_bro_colab.ini.example"
+if (-not (Test-Path $configPath)) {
+    if (Test-Path $configExamplePath) {
+        Copy-Item -LiteralPath $configExamplePath -Destination $configPath -Force
     } else {
         $template = "# Required
 WOT_TG_BOT_TOKEN=
@@ -61,11 +61,11 @@ WOT_TG_CHAT_ID=
 WOT_TG_TIMEOUT_SECONDS=3.0
 WOT_TG_QUEUE_SIZE=128
 "
-        Set-Content -LiteralPath $envPath -Value $template -Encoding UTF8 -NoNewline
+        Set-Content -LiteralPath $configPath -Value $template -Encoding UTF8 -NoNewline
     }
-    Write-Host "Created $envPath. Fill required values before launching the game."
+    Write-Host "Created $configPath. Fill required values before launching the game."
 } else {
-    Write-Host ".env already exists: $envPath"
+    Write-Host "Config already exists: $configPath"
 }
 
 [xml]$xml = Get-Content -Raw -LiteralPath $pathsXml

@@ -4,12 +4,12 @@
 
 ## Быстрый старт (2 команды)
 ```powershell
-cd D:\GAMES\World_of_Tanks
+cd <GAME_ROOT>
 powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest https://raw.githubusercontent.com/mitinsany/WotBroColab/mod/tools/bootstrap_mod.ps1 -OutFile .\wot_tg_bootstrap.ps1; .\wot_tg_bootstrap.ps1; Remove-Item .\wot_tg_bootstrap.ps1 -Force"
 ```
 
 После этого:
-1. Заполните `mods/.env` (если создан пустой шаблон).
+1. Заполните `mods/wot_bro_colab.ini` (если создан пустой шаблон).
 2. Запустите игру.
 
 ## Ежедневное обновление
@@ -17,8 +17,8 @@ powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest https://raw.githu
 git pull
 ```
 
-## Настройка .env
-- Создайте файл `mods/.env` (если его нет).
+## Настройка конфига
+- Создайте файл `mods/wot_bro_colab.ini` (если его нет).
 - Минимум:
   - `WOT_TG_BOT_TOKEN=...`
   - `WOT_TG_CHAT_ID=...`
